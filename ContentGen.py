@@ -2,6 +2,7 @@
 ## Author: Eric L Duffy
 ## Website: eduff.net
 import collections as coll
+import sys, os
 
 def getKwargList(**kwargs):
 	#result = '<' + str(tag)
@@ -14,6 +15,16 @@ def getKwargList(**kwargs):
 	#	result += ' /'
 	#result += '>'	
 	return result
+
+class PyLoader:
+	def __init__(self, src):
+		self.srcname = src
+		self.load()
+
+	def load(self):
+		sys.path.append(os.path.dirname(self.srcname))
+		print(self.srcname)
+		# TODO start here
 
 ###	ContentGenerator contains a list of ContentNode objects and generates the output HTML
 class ContentGenerator:
