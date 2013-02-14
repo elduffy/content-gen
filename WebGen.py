@@ -4,7 +4,7 @@
 
 from sys import exit, stderr
 from optparse import OptionParser
-from ContentGen import PyLoader
+import ContentGen as cg
 
 def get_usage():
 	return
@@ -19,6 +19,9 @@ optParser.add_option('-r', '--recursive', action='store_true', default=False, de
 (opts, args) = optParser.parse_args()
 if len(args) != 1:
 	print('Must pass a python file as argument.\n{0}'.format(optParser.get_usage()))
+	exit(0)
 
 
-pl = PyLoader(args[0])
+
+sh = cg.ScriptHandler(args[0])
+sh.run()

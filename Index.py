@@ -4,8 +4,8 @@ import os.path
 import datetime, date, time, timedelta
 import ContentGen as cg
 
-if not __name__ == '__main__':
-	exit(0)
+#if not __name__ == '__main__':
+#	exit(0)
 
 OUT = stdout
 GENDM = False

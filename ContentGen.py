@@ -3,6 +3,7 @@
 ## Website: eduff.net
 import collections as coll
 import sys, os
+import time, datetime
 
 def getKwargList(**kwargs):
 	#result = '<' + str(tag)
@@ -16,15 +17,101 @@ def getKwargList(**kwargs):
 	#result += '>'	
 	return result
 
-class PyLoader:
-	def __init__(self, src):
-		self.srcname = src
-		self.load()
 
-	def load(self):
-		sys.path.append(os.path.dirname(self.srcname))
-		print(self.srcname)
-		# TODO start here
+class ScriptHandler:
+	def __init__(self, filename):
+		self.filename = filename.strip()
+
+	def __getDttmFormatString(self):
+		return '%Y-%m-%d %H:%M:%S'
+
+	def __writeSourceModifiedTime(self, writer):
+		dttm = self.getSourceModifiedTime()
+		if dttm == None:
+			return
+		datestr = dttm.strftime(self.__getDttmFormatString())
+		writer.write('mtime:\t{0}\n'.format(datestr))
+
+	def shouldRun(self):
+		## looks at the input file (source) modified time
+		## then looks at the stored modified time, if any
+		## if the difference is greater >= 1 seconds, regenerate
+		modifiedTime = self.getSourceModifiedTime()
+		storedTime = self.getStoredModifiedTime()
+		#print("{0},\t{1}".format(modifiedTime,storedTime))
+		if modifiedTime == None:
+			return False
+		if storedTime == None:
+			return True
+		secDiff = abs((modifiedTime - storedTime).total_seconds())
+		return secDiff >= 1
+
+	def getSourceModifiedTime(self):
+		try:
+			return datetime.datetime.fromtimestamp(os.path.getmtime(self.filename))
+		except IOError, ioe:
+			return None
+
+	def getStoreName(self):
+		## if input is e.g. 'Index.py', return '.wg_Index'
+		extIdx = self.filename.rfind('.py')
+		if extIdx == len(self.filename) - len('.py'):
+			result = self.filename[:extIdx]
+		else:
+			result = self.filename
+		result = '.wg_' + result.replace('.', '_')
+		return result
+
+	def getHtmlName(self):
+		## replace '.py' with '.htm' or append '.htm'
+		extIdx = self.filename.rfind('.py')
+		if extIdx == len(self.filename) - len('.py'):
+			result = self.filename[:extIdx] + '.htm'
+		else:
+			result = self.filename + '.htm'
+		return result
+		
+
+	def writeToStore(self):
+		writer = None
+		try:
+			writer = open(self.getStoreName(), 'w')
+			self.__writeSourceModifiedTime(writer)
+			#TODO: update as necessary
+		except IOError:
+			return
+		finally:
+			if writer != None:
+				writer.close()
+		return
+			
+	
+	def getStoredModifiedTime(self):
+		reader = None
+		try:
+			reader = open(self.getStoreName(), 'r')
+			prefix = 'mtime:\t'
+			for line in reader.readlines():
+				line = line.strip()
+				idx = line.find(prefix)
+				if idx < 0:
+					continue
+				remaining = line[idx+len(prefix):]
+				dttm = datetime.datetime.strptime(remaining, self.__getDttmFormatString())
+				return dttm
+		except IOError:
+			return None
+		except ValueError, ve:
+			print(ve)
+			return None
+		finally:
+			if reader != None:
+				reader.close()
+
+	def run(self):
+		if self.shouldRun():
+			execfile(self.filename, globals(), locals())
+			self.writeToStore()
 
 ###	ContentGenerator contains a list of ContentNode objects and generates the output HTML
 class ContentGenerator:
