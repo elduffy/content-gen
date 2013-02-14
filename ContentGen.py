@@ -19,8 +19,45 @@ def getKwargList(**kwargs):
 
 
 class ScriptHandler:
-	def __init__(self, filename):
+	def __init__(self, filename, opts=dict()):
 		self.filename = filename.strip()
+		self.opts = opts
+
+	@staticmethod
+	def forceKey():
+		return 'force'
+
+	@staticmethod
+	def recurKey():
+		return 'recursive'
+
+	@staticmethod
+	def checkRelKey():
+		return 'check_rel'
+
+	@staticmethod
+	def checkAllKey():
+		return 'check_all'
+
+	def __forcesWrite(self):
+		if self.opts != None and self.forceKey() in self.opts:
+			return self.opts[self.forceKey()]
+		return False
+
+	def __isRecursive(self):
+		if self.opts != None and self.recurKey() in self.opts:
+			return self.opts[self.recurKey()]
+		return False
+	
+	def __checksRelativeRefs(self):
+		if self.opts != None and self.checkRelKey() in self.opts:
+			return self.opts[self.checkRelKey()]
+		return False
+
+	def __checksAllRefs(self):
+		if self.opts != None and self.checkAllKey() in self.opts:
+			return self.opts[self.checkAllKey()]
+		return False
 
 	def __getDttmFormatString(self):
 		return '%Y-%m-%d %H:%M:%S'
@@ -32,7 +69,20 @@ class ScriptHandler:
 		datestr = dttm.strftime(self.__getDttmFormatString())
 		writer.write('mtime:\t{0}\n'.format(datestr))
 
+	def getReferencedScripts(self, gen):
+		## Loop over structure to find them
+		result = set()
+		for node in gen:
+			if isinstance(node, ScriptRef):
+				result.add(node.getScriptRef())
+			if isinstance(node, PageSection):
+				result |= self.getReferencedScripts(node)
+		return result
+		
+
 	def shouldRun(self):
+		if self.__forcesWrite():
+			return True
 		## looks at the input file (source) modified time
 		## then looks at the stored modified time, if any
 		## if the difference is greater >= 1 seconds, regenerate
@@ -62,15 +112,28 @@ class ScriptHandler:
 		result = '.wg_' + result.replace('.', '_')
 		return result
 
-	def getHtmlName(self):
+	@staticmethod
+	def getHtmlFileName(script):
 		## replace '.py' with '.htm' or append '.htm'
-		extIdx = self.filename.rfind('.py')
-		if extIdx == len(self.filename) - len('.py'):
-			result = self.filename[:extIdx] + '.htm'
+		extIdx = script.rfind('.py')
+		if extIdx == len(script) - len('.py'):
+			result = script[:extIdx] + '.htm'
 		else:
-			result = self.filename + '.htm'
+			result = script + '.htm'
 		return result
 		
+
+	def getHtmlName(self):
+		return ScriptHandler.getHtmlFileName(self.filename)
+
+	def getHtmlPageHeader(self):
+		fname = os.path.basename(self.filename)
+		extIdx = fname.rfind('.py')
+		if extIdx > 0:
+			fname = fname[:extIdx]
+		firstChar = fname[0].upper()
+		fname = '- ' + str(firstChar) + str(fname[1:]) + '.'
+		return fname
 
 	def writeToStore(self):
 		writer = None
@@ -109,15 +172,51 @@ class ScriptHandler:
 				reader.close()
 
 	def run(self):
-		if self.shouldRun():
-			execfile(self.filename, globals(), locals())
-			self.writeToStore()
+		sys.stderr.write("Processing \'{0}\'\n".format(self.filename))
+		result = set()
+		if not self.shouldRun():
+			sys.stderr.write('\'{0}\' already current.\n'.format(self.getHtmlName()))
+			return set()
+		try:
+			writer = open(self.getHtmlName(), 'w')
+			gen = ContentGenerator(writer)
+			result.add(os.path.abspath(self.filename))
+		except IOError, ioe:
+			sys.stderr.write(str(ioe) + '\n')
+			return set()
+		if gen == None:
+			return set()
+		
+		## set default elements in the generator
+		NAME = 'Eric L Duffy'
+		gen.addNodes([DocStart(), PageTitle(), LinkCSS(), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),1) ])
+		execfile(self.filename, globals(), locals())
+		gen.addNodes([BodyEnd(), DocEnd()])
+		gen.generateHTML()
+		gen.close()
+		
+		self.writeToStore()
+		
+		if self.__isRecursive():
+			scripts = self.getReferencedScripts(gen)
+			
+			for script in scripts:
+				absScript = os.path.abspath(script)
+				if absScript in result:
+					continue
+				sh = ScriptHandler(script, self.opts)
+				processed = sh.run()
+				result |= processed
+		return result
+
 
 ###	ContentGenerator contains a list of ContentNode objects and generates the output HTML
 class ContentGenerator:
 	def __init__(self, writer):
 		self.nodes = []
 		self.writer = writer
+	def __iter__(self):
+		return iter(self.nodes)
 	def addNode(self, node):
 		self.nodes.append(node)
 	def addNodes(self, nodes):
@@ -127,6 +226,9 @@ class ContentGenerator:
 			self.writer.write(node.generateHTML())
 			self.writer.write('\n')
 		return
+	def close(self):
+		if self.writer != None:
+			self.writer.close()
 
 ###	ContentNode is an abstract object which can generate HTML output
 class ContentNode(object):
@@ -141,6 +243,11 @@ class ContentString(ContentNode):
 		self.string = string
 	def generateHTML(self):
 		return self.string
+
+###	DateString is a ContentString subclass generating text of a datetime (current UTC datetime by default)
+class DateString(ContentString):
+	def __init__(self, dttm=datetime.datetime.utcnow(), format='%A %d %B, %Y'):
+		super(DateString, self).__init__(dttm.strftime(format))
 
 #### 	Begin abstract Tag classes
 ### 	TagEmpty is an empty HTML tag, such as <img ... />
@@ -237,6 +344,22 @@ class AEnd(TagEnd):
 	def __init__(self):
 		super(AEnd, self).__init__('a')
 
+class HREF(TagStartEnd):
+	def __init__(self, text, href):
+		super(HREF, self).__init__('a', text, href=href)
+		self.href = href
+	def getHRef(self):
+		return self.href
+
+class ScriptRef(HREF):
+	def __init__(self, text, script):
+		super(ScriptRef, self).__init__(text, ScriptHandler.getHtmlFileName(script))
+		self.script = script
+	def getScriptRef(self):
+		return self.script
+	
+
+
 #####	End Start/End-Tag extensions
 #
 #####	Begin Empty-Tag extensions
@@ -261,6 +384,20 @@ class PageSection(ContentNode):
 		self.secStart = SectionStart(cls, **kwargs)
 		self.elems = []
 
+	def __iter__(self):
+		return iter(self.elems)
+
+	def addNode(self, node):
+		if isinstance(node, ContentNode):
+			self.elems.append(node)
+		else:
+			self.addText(str(node))
+
+	def addNodes(self, nodes):
+		## don't extend, so we can add non-subclasses of ContentNode such as strings
+		for node in nodes:
+			self.addNode(node)
+
 	def addText(self, text):
 		self.elems.append(ContentString(text))
 
@@ -271,22 +408,22 @@ class PageSection(ContentNode):
 		self.elems.append(TagEnd('p'))
 
 	def addHREF(self, text, href):
-		aStart = AStart(href=href)
-		aEnd = AEnd()
-		self.elems.append(aStart)
-		self.elems.append(ContentString(text))
-		self.elems.append(aEnd)
+		self.elems.append(HREF(text, href))
+
+	def addScriptRef(self, text, script):
+		self.elems.append(ScriptRef(text, os.path.abspath(script)))
 
 	def generateHTML(self):
 		result = ''
 		result += self.secStart.generateHTML()+ '\n'
-		result += AStart(name=self.title.lower()).generateHTML()
+		secName = self.title.lower().replace(' ', '_')
+		result += AStart(name=secName).generateHTML()
 		result += Header(str(self.title) + '.', 3).generateHTML()
 		result += AEnd().generateHTML() + '\n'
 		
 		for elem in self.elems:
 			result += elem.generateHTML()
-			result += '\n'
+			#result += '\n'
 		result += SectionEnd().generateHTML()
 		
 		return result
