@@ -4,6 +4,8 @@
 import collections as coll
 import sys, os
 import time, datetime
+import re
+import urllib
 
 def getKwargList(**kwargs):
 	#result = '<' + str(tag)
@@ -38,6 +40,25 @@ class ScriptHandler:
 	@staticmethod
 	def checkAllKey():
 		return 'check_all'
+	
+	@staticmethod
+	def silentKey():
+		return 'silent'
+
+	@staticmethod
+	def isUrl(path):
+		reg = ScriptHandler.urlRegex()
+		return reg.match(path) != None
+
+	@staticmethod
+	def urlRegex():
+		return re.compile(
+			r'^(?:http|ftp)s?://'
+			r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+(?:[A-Z]{2,6}\.?|[A-Z0-9-]{2,}\.?)|'
+			r'localhost|'
+			r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
+			r'(?::\d+)?'
+			r'(?:/?|[/?]\S+)$', re.IGNORECASE) ## from django
 
 	def __forcesWrite(self):
 		if self.opts != None and self.forceKey() in self.opts:
@@ -59,6 +80,11 @@ class ScriptHandler:
 			return self.opts[self.checkAllKey()]
 		return False
 
+	def __isSilent(self):
+		if self.opts != None and self.silentKey() in self.opts:
+			return self.opts[self.silentKey()]
+		return False
+
 	def __getDttmFormatString(self):
 		return '%Y-%m-%d %H:%M:%S'
 
@@ -69,6 +95,40 @@ class ScriptHandler:
 		datestr = dttm.strftime(self.__getDttmFormatString())
 		writer.write('mtime:\t{0}\n'.format(datestr))
 
+	def __checkAndReportLocal(self, path):
+		#print("Checking {0} from {1}".format(path, self.filename))
+		olddir = os.path.abspath('.')
+		filedir = os.path.dirname(self.filename)
+		if len(filedir) == 0:
+			filedir = '.'
+		os.chdir(filedir)
+		abspath = os.path.abspath(path)
+		os.chdir(olddir)
+
+		if not os.path.exists(abspath):
+			self.issueReport('Unable to locate resource: \'{0}\' referenced in \'{1}\''.format(path, self.filename))
+		return
+
+	def __checkAndReportExternal(self, url):
+		try:
+			res = urllib.urlopen(url)
+		except IOError:
+			self.issueReport('Unable to access url \'{0}\' referenced in \'{1}\''.format(url, self.filename))
+			return
+	
+	def __cssPath(self):
+		direc = os.path.relpath(self.filename)
+		result = ''
+		depth = len(direc.split('/'))
+		for i in xrange(1,depth):
+			result += '../'
+		return result + 'style.css'
+
+	def issueReport(self, message):
+		if self.__isSilent():
+			return
+		sys.stderr.write('Report: ' + str(message) + '\n')
+
 	def getReferencedScripts(self, gen):
 		## Loop over structure to find them
 		result = set()
@@ -78,7 +138,19 @@ class ScriptHandler:
 			if isinstance(node, PageSection):
 				result |= self.getReferencedScripts(node)
 		return result
-		
+	
+	def getReferencedResources(self, gen):
+		result = set()
+		for node in gen:
+			if isinstance(node, HREF) and not isinstance(node, ScriptRef):
+				result.add(node.getHRef())
+			if isinstance(node, Img):
+				result.add(node.getSource())
+			if isinstance(node, Link):
+				result.add(node.getHRef())
+			if isinstance(node, PageSection):
+				result |= self.getReferencedResources(node)
+		return result
 
 	def shouldRun(self):
 		if self.__forcesWrite():
@@ -104,11 +176,12 @@ class ScriptHandler:
 
 	def getStoreName(self):
 		## if input is e.g. 'Index.py', return '.wg_Index'
-		extIdx = self.filename.rfind('.py')
-		if extIdx == len(self.filename) - len('.py'):
-			result = self.filename[:extIdx]
+		fname = os.path.basename(self.filename)
+		extIdx = fname.rfind('.py')
+		if extIdx == len(fname) - len('.py'):
+			result = fname[:extIdx]
 		else:
-			result = self.filename
+			result = fname
 		result = '.wg_' + result.replace('.', '_')
 		return result
 
@@ -138,10 +211,12 @@ class ScriptHandler:
 	def writeToStore(self):
 		writer = None
 		try:
-			writer = open(self.getStoreName(), 'w')
+			fname = os.path.relpath(os.path.dirname(os.path.abspath(self.filename)) + '/' + self.getStoreName())
+			writer = open(fname, 'w')
 			self.__writeSourceModifiedTime(writer)
 			#TODO: update as necessary
-		except IOError:
+		except IOError, ioe:
+			self.issueReport('Failed to write to store: {0}'.format(ioe))
 			return
 		finally:
 			if writer != None:
@@ -152,7 +227,8 @@ class ScriptHandler:
 	def getStoredModifiedTime(self):
 		reader = None
 		try:
-			reader = open(self.getStoreName(), 'r')
+			fname = os.path.relpath(os.path.dirname(os.path.abspath(self.filename)) + '/' + self.getStoreName())
+			reader = open(fname, 'r')
 			prefix = 'mtime:\t'
 			for line in reader.readlines():
 				line = line.strip()
@@ -165,31 +241,30 @@ class ScriptHandler:
 		except IOError:
 			return None
 		except ValueError, ve:
-			print(ve)
 			return None
 		finally:
 			if reader != None:
 				reader.close()
 
-	def run(self):
-		sys.stderr.write("Processing \'{0}\'\n".format(self.filename))
+	def run(self, depth=0):
+		self.issueReport("Processing \'{0}\'".format(self.filename))
 		result = set()
 		if not self.shouldRun():
-			sys.stderr.write('\'{0}\' already current.\n'.format(self.getHtmlName()))
+			self.issueReport('\'{0}\' already current.'.format(self.getHtmlName()))
 			return set()
 		try:
 			writer = open(self.getHtmlName(), 'w')
 			gen = ContentGenerator(writer)
 			result.add(os.path.abspath(self.filename))
 		except IOError, ioe:
-			sys.stderr.write(str(ioe) + '\n')
+			self.issueReport('Failed to process {0}: {1}'.format(self.filename, ioe))
 			return set()
 		if gen == None:
 			return set()
 		
 		## set default elements in the generator
 		NAME = 'Eric L Duffy'
-		gen.addNodes([DocStart(), PageTitle(), LinkCSS(), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),1) ])
+		gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
 		execfile(self.filename, globals(), locals())
 		gen.addNodes([BodyEnd(), DocEnd()])
 		gen.generateHTML()
@@ -207,6 +282,19 @@ class ScriptHandler:
 				sh = ScriptHandler(script, self.opts)
 				processed = sh.run()
 				result |= processed
+		
+		if self.__checksRelativeRefs() or self.__checksAllRefs():
+			refs = self.getReferencedResources(gen)
+			for ref in refs:
+				if not ScriptHandler.isUrl(ref):
+					## local resource
+					self.__checkAndReportLocal(ref)
+				else:
+					## external resource
+					if self.__checksAllRefs():
+						## check the link
+						self.__checkAndReportExternal(ref)
+		
 		return result
 
 
@@ -219,6 +307,15 @@ class ContentGenerator:
 		return iter(self.nodes)
 	def addNode(self, node):
 		self.nodes.append(node)
+	def insertNode(self, idx, node):
+		self.nodes.insert(idx, node)
+	def findType(self, typ):
+		i = 0
+		for node in self.nodes:
+			if isinstance(node, typ):
+				return i
+			i += 1
+		return -1
 	def addNodes(self, nodes):
 		self.nodes.extend(nodes)
 	def generateHTML(self):
@@ -344,6 +441,13 @@ class AEnd(TagEnd):
 	def __init__(self):
 		super(AEnd, self).__init__('a')
 
+class PStart(TagStart):
+	def __init__(self, cls=None, **kwargs):
+		super(PStart, self).__init__('p', cls, **kwargs)
+class PEnd(TagEnd):
+	def __init__(self):
+		super(PEnd, self).__init__('p')
+
 class HREF(TagStartEnd):
 	def __init__(self, text, href):
 		super(HREF, self).__init__('a', text, href=href)
@@ -352,13 +456,26 @@ class HREF(TagStartEnd):
 		return self.href
 
 class ScriptRef(HREF):
-	def __init__(self, text, script):
-		super(ScriptRef, self).__init__(text, ScriptHandler.getHtmlFileName(script))
+	def __init__(self, text, script, section=''):
+		super(ScriptRef, self).__init__(text, ScriptHandler.getHtmlFileName(script) + (('#' + section) if len(section) > 0 else '' ))
 		self.script = script
+		self.section = section
 	def getScriptRef(self):
 		return self.script
+	def hasSection(self):
+		return len(section) > 0
 	
+class Break(TagStart):
+	def __init__(self):
+		super(Break, self).__init__('br')
 
+class BoldStart(TagStart):
+	def __init__(self):
+		super(BoldStart, self).__init__('b')
+
+class BoldEnd(TagEnd):
+	def __init__(self):
+		super(BoldEnd, self).__init__('b')
 
 #####	End Start/End-Tag extensions
 #
@@ -367,10 +484,16 @@ class ScriptRef(HREF):
 class Img(TagEmpty):
 	def __init__(self, src, cls=None, **kwargs):
 		super(Img, self).__init__('img', cls, src=src, **kwargs)
+		self.src = src
+	def getSource(self):
+		return self.src
 
 class Link(TagEmpty):
 	def __init__(self, rel, type, href, cls=None):
 		super(Link, self).__init__('link', cls, rel=rel, type=type, href=href)
+		self.href = href
+	def getHRef(self):
+		return self.href
 
 class LinkCSS(Link):
 	def __init__(self, cssFile='style.css'):

@@ -5,7 +5,7 @@
 from sys import exit, stderr
 from optparse import OptionParser
 import os
-import ContentGen as cg
+from ContentGen import ScriptHandler
 
 def get_usage():
 	return
@@ -13,26 +13,32 @@ def get_usage():
 if not __name__ == '__main__':
 	exit(0)
 
-optParser = OptionParser(usage='usage: %prog [options] filename')
-optParser.add_option('-f', '--force', action='store_true', default=False, dest=cg.ScriptHandler.forceKey(), help='Force overwrite of existing HTML file(s)')
-optParser.add_option('-r', '--recursive', action='store_true', default=False, dest=cg.ScriptHandler.recurKey(), help='Recurse through referenced files')
-optParser.add_option('-l', action='store_true', default=False, dest=cg.ScriptHandler.checkRelKey(), help='Check relative references in source files when able')
-optParser.add_option('-c', action='store_true', default=False, dest=cg.ScriptHandler.checkAllKey(), help='Check all references in source files when able')
+optParser = OptionParser(usage='usage: %prog [options] [script0 [script1 [...]]')
+optParser.add_option('-f', '--force', action='store_true', default=False, dest=ScriptHandler.forceKey(), help='Force overwrite of existing HTML file(s)')
+optParser.add_option('-r', '--recursive', action='store_true', default=False, dest=ScriptHandler.recurKey(), help='Recurse through referenced files')
+optParser.add_option('-l', '--check-local', action='store_true', default=False, dest=ScriptHandler.checkRelKey(), help='Check relative references in source files when able')
+optParser.add_option('-c', '--check-all', action='store_true', default=False, dest=ScriptHandler.checkAllKey(), help='Check all references in source files when able')
+optParser.add_option('-s', '--silent', action='store_true', default=False, dest=ScriptHandler.silentKey(), help='Prevent normal execution output')
 
 (opts, args) = optParser.parse_args()
-if len(args) != 1:
+if len(args) == 0:
 	print('Must pass a python script as argument.\n{0}'.format(optParser.get_usage()))
 	exit(0)
 
+optDict = vars(opts)
+silent = optDict[ScriptHandler.silentKey()]
+filesProcessed = set()
 for fname in args:
 	try:
-		sh = cg.ScriptHandler(fname, vars(opts))
+		sh = ScriptHandler(fname, optDict)
 		processed = sh.run()
-		if len(processed) > 0:
-			reportStr = 'Processed the following files: '
-			for script in processed:
-				reportStr += "\n'{0}'".format(script)
-			print(reportStr)
-		
+		filesProcessed |= processed
 	except IOError, ioe:
 		stderr.write('Could not process file \'{0}\': {1}\n'.format(fname, ioe))
+
+numProcessed = len(filesProcessed)
+if numProcessed > 0 and not silent:
+	reportStr = '\nComplete! Processed {0} file{1}: '.format(numProcessed, 's' if numProcessed > 1 else '' )
+	for script in filesProcessed:
+		reportStr += "\n'{0}'".format(script)
+	print(reportStr)

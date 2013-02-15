@@ -1,3 +1,8 @@
 *.pyc
 *.wg_*
 *.htm
+*.css
+*.js
+
+photos
+photos/*
