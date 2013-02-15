@@ -7,4 +7,6 @@
 photos
 photos/*
 imgs
-imgs/
+imgs/*
+misc
+misc/*

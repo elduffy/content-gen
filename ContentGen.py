@@ -553,8 +553,14 @@ class NodeList(ContentNode):
 		for node in nodes:
 			self.addNode(node)
 
+	def nodeAt(self, idx):
+		return self.nodes[idx]
+
 	def __iter__(self):
 		return iter(self.nodes)
+
+	def __len__(self):
+		return len(self.nodes)
 
 	def canHoldChildren(self):
 		return True
@@ -582,6 +588,12 @@ class Table(TagStartEnd):
 		return iter(self.content)
 	def canHoldChildren(self):
 		return True
+	def columnCount(self):
+		if self.content == None:
+			return 0
+		if len(self.content) == 0:
+			return 0
+		return len(self.content.nodeAt(0))
 	def addRow(self, node):
 		if not isinstance(node, TableRow):
 			self.content.addNode(TableRow(self.cls, node))
@@ -632,6 +644,7 @@ class PageSection(ContentNode):
 		self.title = title
 		self.secStart = SectionStart(cls, **kwargs)
 		self.elems = []
+		self.sectionName = self.title.lower().replace(' ', '_')
 		
 		if 'printHeader' in kwargs and kwargs['printHeader'] == False:
 			self.printHeader = False
@@ -670,10 +683,16 @@ class PageSection(ContentNode):
 	def canHoldChildren(self):
 		return True
 
+	def getSectionName(self):
+		return self.sectionName
+
+	def setSectionName(self, name):
+		self.sectionName = name
+
 	def generateHTML(self):
 		result = ''
 		result += self.secStart.generateHTML()+ '\n'
-		secName = self.title.lower().replace(' ', '_')
+		secName = self.getSectionName()
 		result += AStart(name=secName).generateHTML()
 		if self.printHeader:
 			result += Header(str(self.title) + '.', 3).generateHTML()
