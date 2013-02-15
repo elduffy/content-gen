@@ -10,8 +10,8 @@ IMG_ME_SRC = 'photos/me.jpg'
 
 ## Personal Info Section
 personal = PageSection('Personal', 'bordered')
-personal.startPara()
 personal.addNodes([
+PStart(),
 'My name is Eric Duffy. I am a researcher and student at the ',
 HREF('University of Illinois at Urbana-Champaign', 'http://www.illinois.edu/'),
 '. I work in the ',
@@ -25,9 +25,15 @@ ScriptRef('playing music', 'pages/music.py'),
 ScriptRef('traveling', 'pages/travel.py'),
 ', working on various ',
 ScriptRef('projects', 'pages/projects.py'),
-' and spending time outdoors.'
+' and spending time outdoors.',
+PEnd(),
+PStart(),
+'I am currently seeking employment for summer 2013. If you need a security specialist around that time, please ',
+AStartEnd('contact', href='#contact'), ## avoid HREF so it the checker won't throw an error
+' me!',
+PEnd()
 ])
-personal.endPara()
+
 
 ## Occupation History Section
 occup = PageSection('Occupational History', 'bordered')
@@ -81,7 +87,7 @@ PStart(),
 BoldStart(),
 HREF('The University of Texas at Dallas', 'http://www.utdallas.edu'),
 BoldEnd(),
-'- Help Desk, CS Tutor, Computer Lab, etc (2006-2010). ',
+' - Help Desk, CS Tutor, Computer Lab, etc (2006-2010). ',
 HREF('Richardson, Texas.', 'http://maps.google.com/maps?ll=32.986492,-96.749137&z=15'),
 PEnd(),
 PStart(cls='n'),
@@ -90,22 +96,71 @@ PEnd()
 ])
 
 ## Educational History Section
+# UIUC
 educa = PageSection('Educational History', 'bordered')
 educa.addNodes([
 PStart(),
 BoldStart(),
 HREF('The University of Illinois at Urbana-Champaign', 'http://www.illinois.edu'),
+BoldEnd(),
 ' - M.S., Computer Science (2013). (',
 ScriptRef('Courses', 'pages/courses.py', 'grad_cs'),
 ') ',
-BoldEnd(),
 PEnd()
 ])
 
+# UTD CS
+educa.addNodes([
+PStart(),
+BoldStart(),
+HREF('The University of Texas at Dallas', 'http://www.illinois.edu'),
+BoldEnd(),
+' - B.S., Computer Science (2010). (',
+ScriptRef('Courses', 'pages/courses.py', 'ug_cs'),
+') ',
+PEnd()
+])
 
+accol = UList('ast')
+accol.addNodes([
+'National Science Foundation Computer Science and Mathematics Scholarship',
+'Academic Distinction Scholarship',
+'Ericsson Scholarship',
+"Dean's List",
+'Honors Graduate'
+])
 
+# UTD Math
+educa.addNodes([
+PStart(),
+BoldStart(),
+HREF('The University of Texas at Dallas', 'http://www.illinois.edu'),
+BoldEnd(),
+' - B.S., Mathematics (2010). (',
+ScriptRef('Courses', 'pages/courses.py', 'ug_math'),
+') ',
+PEnd(),
 
+PStart(cls='n'),
+accol,
+PEnd()
+])
 
+## Contact Section
+contact = PageSection('Contact', 'bordered')
+
+contactList = UList('ast')
+contactList.addNodes([
+NodeList('Email: ', Img('imgs/email_16.png')),
+HREF('LinkedIn','http://www.linkedin.com/pub/eric-duffy/40/56a/5a3')
+])
+
+contact.addNodes([ PStart(), contactList, PEnd() ])
+
+## Miscellaneous Section
+misc = PageSection('Miscellaneous', 'bordered')
+miscList = UList('ast', ScriptRef('Books', 'pages/books.py'))
+misc.addNodes([PStart(), miscList, PEnd()])
 
 ## insert image above the header(s)
 idx = gen.findType(BodyStart)
@@ -115,3 +170,7 @@ gen.addNode(Break())
 gen.addNode(occup)
 gen.addNode(Break())
 gen.addNode(educa)
+gen.addNode(Break())
+gen.addNode(contact)
+gen.addNode(Break())
+gen.addNode(misc)

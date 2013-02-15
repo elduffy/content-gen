@@ -96,7 +96,6 @@ class ScriptHandler:
 		writer.write('mtime:\t{0}\n'.format(datestr))
 
 	def __checkAndReportLocal(self, path):
-		#print("Checking {0} from {1}".format(path, self.filename))
 		olddir = os.path.abspath('.')
 		filedir = os.path.dirname(self.filename)
 		if len(filedir) == 0:
@@ -135,7 +134,8 @@ class ScriptHandler:
 		for node in gen:
 			if isinstance(node, ScriptRef):
 				result.add(node.getScriptRef())
-			if isinstance(node, PageSection):
+			#if isinstance(node, PageSection) or isinstance(node, NodeList) or isinstance(node, UList):
+			if node.canHoldChildren():
 				result |= self.getReferencedScripts(node)
 		return result
 	
@@ -160,7 +160,6 @@ class ScriptHandler:
 		## if the difference is greater >= 1 seconds, regenerate
 		modifiedTime = self.getSourceModifiedTime()
 		storedTime = self.getStoredModifiedTime()
-		#print("{0},\t{1}".format(modifiedTime,storedTime))
 		if modifiedTime == None:
 			return False
 		if storedTime == None:
@@ -246,38 +245,43 @@ class ScriptHandler:
 			if reader != None:
 				reader.close()
 
-	def run(self, depth=0):
+	def run(self):
 		self.issueReport("Processing \'{0}\'".format(self.filename))
 		result = set()
 		if not self.shouldRun():
 			self.issueReport('\'{0}\' already current.'.format(self.getHtmlName()))
-			return set()
-		try:
-			writer = open(self.getHtmlName(), 'w')
-			gen = ContentGenerator(writer)
+			gen = ContentGenerator(None)
 			result.add(os.path.abspath(self.filename))
-		except IOError, ioe:
-			self.issueReport('Failed to process {0}: {1}'.format(self.filename, ioe))
-			return set()
-		if gen == None:
-			return set()
+			execfile(self.filename, globals(), locals()) ## updates gen
+			#return set()
+		else:
+			try:
+				writer = open(self.getHtmlName(), 'w')
+				gen = ContentGenerator(writer)
+				result.add(os.path.abspath(self.filename))
+			except IOError, ioe:
+				self.issueReport('Failed to process {0}: {1}'.format(self.filename, ioe))
+				return set()
+			if gen == None:
+				return set()
 		
-		## set default elements in the generator
-		NAME = 'Eric L Duffy'
-		gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
-		execfile(self.filename, globals(), locals())
-		gen.addNodes([BodyEnd(), DocEnd()])
-		gen.generateHTML()
-		gen.close()
-		
-		self.writeToStore()
+			## set default elements in the generator
+			NAME = 'Eric L Duffy'
+			gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
+			execfile(self.filename, globals(), locals())
+			gen.addNodes([HomeLink(), ModifiedDateString(), BodyEnd(), DocEnd()])
+			gen.generateHTML()
+			gen.close()
+			self.writeToStore()
 		
 		if self.__isRecursive():
 			scripts = self.getReferencedScripts(gen)
-			
 			for script in scripts:
 				absScript = os.path.abspath(script)
 				if absScript in result:
+					continue
+				if not os.path.exists(absScript):
+					self.issueReport('Script \'{0}\' referenced in \'{1}\' does not exist'.format(script, self.filename))
 					continue
 				sh = ScriptHandler(script, self.opts)
 				processed = sh.run()
@@ -306,9 +310,15 @@ class ContentGenerator:
 	def __iter__(self):
 		return iter(self.nodes)
 	def addNode(self, node):
-		self.nodes.append(node)
+		if not isinstance(node, ContentNode):
+			self.nodes.append(ContentString(str(node)))
+		else:
+			self.nodes.append(node)
 	def insertNode(self, idx, node):
-		self.nodes.insert(idx, node)
+		if not isinstance(node, ContentNode):
+			self.nodes.insert(idx, ContentString(str(node)))
+		else:
+			self.nodes.insert(idx, node)
 	def findType(self, typ):
 		i = 0
 		for node in self.nodes:
@@ -317,7 +327,8 @@ class ContentGenerator:
 			i += 1
 		return -1
 	def addNodes(self, nodes):
-		self.nodes.extend(nodes)
+		for node in nodes:
+			self.addNode(node)
 	def generateHTML(self):
 		for node in self.nodes:
 			self.writer.write(node.generateHTML())
@@ -332,6 +343,9 @@ class ContentNode(object):
 	def __init__(self):
 		pass
 	
+	def canHoldChildren(self):
+		return False
+
 	def generateHTML(self):
 		return ''
 ###	ContentString is a ContentNode subclass wrapping string
@@ -389,7 +403,26 @@ class TagStartEnd(ContentNode):
 	def __init__(self, tag, content='', cls=None, **kwargs):
 		self.ts = TagStart(tag, cls, **kwargs)
 		self.te = TagEnd(tag)
-		self.content = ContentString(content)
+		self.cls = cls
+		if isinstance(content, ContentNode):
+			self.content = content
+		elif content == None:
+			self.content = ContentString('')
+		else:
+			self.content = ContentString(content)
+	def __iter__(self):
+		if self.content == None:
+			return iter([])
+		elif self.content.canHoldChildren():
+			return iter(self.content)
+		else:
+			return iter([self.content])
+	def canHoldChildren(self):
+		if self.content == None:
+			return False
+		if not isinstance(self.content, ContentNode):
+			return False
+		return True
 	def generateHTML(self):
 		result = str(self.ts.generateHTML())
 		result += str(self.content.generateHTML())
@@ -441,6 +474,17 @@ class AEnd(TagEnd):
 	def __init__(self):
 		super(AEnd, self).__init__('a')
 
+class AStartEnd(TagStartEnd):
+	def __init__(self, content, cls=None, **kwargs):
+		super(AStartEnd, self).__init__('a', content, cls, **kwargs)
+
+class CenterStart(TagStart):
+	def __init__(self, cls=None, **kwargs):
+		super(CenterStart, self).__init__('center', cls, **kwargs)
+class CenterEnd(TagEnd):
+	def __init__(self):
+		super(CenterEnd, self).__init__('center')
+
 class PStart(TagStart):
 	def __init__(self, cls=None, **kwargs):
 		super(PStart, self).__init__('p', cls, **kwargs)
@@ -452,6 +496,8 @@ class HREF(TagStartEnd):
 	def __init__(self, text, href):
 		super(HREF, self).__init__('a', text, href=href)
 		self.href = href
+	def canHoldChildren(self):
+		return False	
 	def getHRef(self):
 		return self.href
 
@@ -476,6 +522,86 @@ class BoldStart(TagStart):
 class BoldEnd(TagEnd):
 	def __init__(self):
 		super(BoldEnd, self).__init__('b')
+
+class UList(TagStartEnd):
+	def __init__(self, cls=None, *nodes):
+		super(UList, self).__init__('ul', NodeList(), cls)
+		self.addNodes(nodes)
+	def __iter__(self):
+		return iter(self.content)
+	def canHoldChildren(self):
+		return True
+	def addNode(self, node):
+		item = TagStartEnd('li', node, self.cls)
+		self.content.addNode(item)
+	def addNodes(self, nodes):
+		for node in nodes:
+			self.addNode(node)
+class NodeList(ContentNode):
+	def __init__(self, *items):
+		super(NodeList, self).__init__()
+		self.nodes = []
+		self.addNodes(items)
+	def addNode(self, node):
+		if node == None:
+			return
+		if not isinstance(node, ContentNode):
+			self.nodes.append(ContentString(str(node)))
+		else:
+			self.nodes.append(node)
+	def addNodes(self, nodes):
+		for node in nodes:
+			self.addNode(node)
+
+	def __iter__(self):
+		return iter(self.nodes)
+
+	def canHoldChildren(self):
+		return True
+	
+	def generateHTML(self):
+		result = ''
+		for node in self.nodes:
+			if node == None:
+				continue
+			result += str(node.generateHTML())
+		return result
+
+class Table(TagStartEnd):
+	def __init__(self, cls=None, *headers):
+		super(Table, self).__init__('table', NodeList(), cls)
+		headerRow = TableRow(cls)
+		for header in headers:
+			if not isinstance(header, ContentNode):
+				header = ContentString(str(header))
+			hdr = TagStartEnd('th', header, cls)
+			headerRow.addNode(hdr)
+		self.addRow(headerRow)
+
+	def __iter__(self):
+		return iter(self.content)
+	def canHoldChildren(self):
+		return True
+	def addRow(self, node):
+		if not isinstance(node, TableRow):
+			self.content.addNode(TableRow(self.cls, node))
+		else:
+			self.content.addNode(node)
+
+class TableRow(NodeList):
+	def __init__(self, cls=None, *columns):
+		super(TableRow, self).__init__()
+		self.cls = cls
+		for col in columns:
+			self.addColumn(col)
+		
+	def addColumn(self, node):
+		if not isinstance(node, ContentNode):
+			node = ContentString(node)
+		super(TableRow, self).addNode(TagStartEnd('td', node, self.cls))
+	def generateHTML(self):
+		result = '<tr>' + super(TableRow, self).generateHTML() + '</tr>'
+		return result
 
 #####	End Start/End-Tag extensions
 #
@@ -506,6 +632,11 @@ class PageSection(ContentNode):
 		self.title = title
 		self.secStart = SectionStart(cls, **kwargs)
 		self.elems = []
+		
+		if 'printHeader' in kwargs and kwargs['printHeader'] == False:
+			self.printHeader = False
+		else:
+			self.printHeader = True
 
 	def __iter__(self):
 		return iter(self.elems)
@@ -536,12 +667,16 @@ class PageSection(ContentNode):
 	def addScriptRef(self, text, script):
 		self.elems.append(ScriptRef(text, os.path.abspath(script)))
 
+	def canHoldChildren(self):
+		return True
+
 	def generateHTML(self):
 		result = ''
 		result += self.secStart.generateHTML()+ '\n'
 		secName = self.title.lower().replace(' ', '_')
 		result += AStart(name=secName).generateHTML()
-		result += Header(str(self.title) + '.', 3).generateHTML()
+		if self.printHeader:
+			result += Header(str(self.title) + '.', 3).generateHTML()
 		result += AEnd().generateHTML() + '\n'
 		
 		for elem in self.elems:
@@ -551,5 +686,14 @@ class PageSection(ContentNode):
 		
 		return result
 
+class HomeLink(NodeList):
+	def __init__(self):
+		super(HomeLink, self).__init__(Break(), HREF('Home','http://eduff.net'), Break(), Break())
+
+class ModifiedDateString(DateString):
+	def __init__(self):
+		super(ModifiedDateString, self).__init__()
+		self.string = 'Modified ' + self.string
+		
 
 ####	End concrete utility Tag classes
