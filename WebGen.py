@@ -7,9 +7,6 @@ from optparse import OptionParser
 import os
 from ContentGen import ScriptHandler
 
-def get_usage():
-	return
-
 if not __name__ == '__main__':
 	exit(0)
 
@@ -30,6 +27,7 @@ silent = optDict[ScriptHandler.silentKey()]
 filesProcessed = set()
 filesModified = set()
 for fname in args:
+	fname = os.path.abspath(fname)
 	try:
 		sh = ScriptHandler(fname, optDict)
 		(processed, modified) = sh.run()

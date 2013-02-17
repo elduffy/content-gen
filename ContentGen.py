@@ -19,6 +19,13 @@ def getKwargList(**kwargs):
 	#result += '>'	
 	return result
 
+def textToHTML(text):
+	result = NodeList()
+	for line in text.split('\n'):
+		result.addNode(line)
+		result.addNode(Break())
+	return result
+
 
 class ScriptHandler:
 	def __init__(self, filename, opts=dict()):
@@ -231,7 +238,17 @@ class ScriptHandler:
 			if writer != None:
 				writer.close()
 		return
-			
+	
+	def getRelativePath(self, rootPath):
+		olddir = os.path.abspath('.')
+		absPath = os.path.abspath(rootPath)
+		filedir = os.path.dirname(self.filename)
+		if len(filedir) == 0:
+			filedir = '.'
+		os.chdir(filedir)
+		rPath = os.path.relpath(absPath)
+		os.chdir(olddir)
+		return rPath
 	
 	def getStoredModifiedTime(self):
 		reader = None
@@ -255,7 +272,7 @@ class ScriptHandler:
 			if reader != None:
 				reader.close()
 
-	def run(self):
+	def run(self, seen=set()):
 		## returns (processedSet, modifiedSet)
 		self.issueReport("Processing \'{0}\'".format(self.filename))
 		pResult = set()
@@ -281,7 +298,9 @@ class ScriptHandler:
 			NAME = 'Eric L Duffy'
 			gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
 			execfile(self.filename, globals(), locals())
-			gen.addNodes([HomeLink(), SourceLink(self.__stripPath(self.filename)), ModifiedDateString(), BodyEnd(), DocEnd()])
+			gen.addNodes([HomeLink(), SourceLink(self.__stripPath(self.filename)),
+				WhatsThisLink(ScriptRef('',self.getRelativePath('pages/webgen.py'))),
+				Break(), Break(), ModifiedDateString(), BodyEnd(), DocEnd()])
 			gen.generateHTML()
 			gen.close()
 			self.writeToStore()
@@ -303,9 +322,12 @@ class ScriptHandler:
 					print(absScript)
 					self.issueReport('Script \'{0}\' referenced in \'{1}\' does not exist'.format(script, self.filename))
 					continue
+				if absScript in seen:
+					continue
 				#sh = ScriptHandler(script, self.opts)
 				sh = ScriptHandler(absScript, self.opts)
-				(processed, modified) = sh.run()
+				seen.add(absScript)
+				(processed, modified) = sh.run(seen)
 				pResult |= processed
 				mResult |= modified
 		
@@ -553,6 +575,10 @@ class BoldStartEnd(TagStartEnd):
 	def __init__(self, content):
 		super(BoldStartEnd, self).__init__('b', content)
 
+class SupStartEnd(TagStartEnd):
+	def __init__(self, content):
+		super(SupStartEnd, self).__init__('sup', content)
+
 class UList(TagStartEnd):
 	def __init__(self, cls=None, *nodes):
 		super(UList, self).__init__('ul', NodeList(), cls)
@@ -748,7 +774,12 @@ class HomeLink(NodeList):
 
 class SourceLink(NodeList):
 	def __init__(self, filename):
-		super(SourceLink, self).__init__(HREF('Source', filename), Break(), Break())
+		super(SourceLink, self).__init__(HREF('Source', filename))
+
+class WhatsThisLink(SupStartEnd):
+	def __init__(self, link):
+		super(WhatsThisLink, self).__init__(link)
+		link.content = NodeList(TagStart('small'),"?",TagEnd('small'))
 
 class ModifiedDateString(DateString):
 	def __init__(self):
