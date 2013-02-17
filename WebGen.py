@@ -28,17 +28,22 @@ if len(args) == 0:
 optDict = vars(opts)
 silent = optDict[ScriptHandler.silentKey()]
 filesProcessed = set()
+filesModified = set()
 for fname in args:
 	try:
 		sh = ScriptHandler(fname, optDict)
-		processed = sh.run()
+		(processed, modified) = sh.run()
 		filesProcessed |= processed
+		filesModified |= modified
 	except IOError, ioe:
 		stderr.write('Could not process file \'{0}\': {1}\n'.format(fname, ioe))
 
 numProcessed = len(filesProcessed)
+numModified = len(filesModified)
 if numProcessed > 0 and not silent:
-	reportStr = '\nComplete! Processed {0} file{1}: '.format(numProcessed, 's' if numProcessed > 1 else '' )
+	reportStr = '\nComplete! Processed {0} file{1}, modifying {2}: '.format(numProcessed, 's' if numProcessed > 1 else '', numModified)
 	for script in filesProcessed:
 		reportStr += "\n'{0}'".format(script)
+		if script in filesModified:
+			reportStr += ' (mod)'
 	print(reportStr)

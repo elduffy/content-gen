@@ -59,6 +59,14 @@ class ScriptHandler:
 			r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'
 			r'(?::\d+)?'
 			r'(?:/?|[/?]\S+)$', re.IGNORECASE) ## from django
+	
+	@staticmethod	
+	def __stripPath(filename):
+		idx = filename.rfind('/')
+		if idx < 0:
+			return filename
+		return filename[idx+1:]
+		
 
 	def __forcesWrite(self):
 		if self.opts != None and self.forceKey() in self.opts:
@@ -114,6 +122,8 @@ class ScriptHandler:
 		except IOError:
 			self.issueReport('Unable to access url \'{0}\' referenced in \'{1}\''.format(url, self.filename))
 			return
+
+		
 	
 	def __cssPath(self):
 		direc = os.path.relpath(self.filename)
@@ -246,30 +256,32 @@ class ScriptHandler:
 				reader.close()
 
 	def run(self):
+		## returns (processedSet, modifiedSet)
 		self.issueReport("Processing \'{0}\'".format(self.filename))
-		result = set()
+		pResult = set()
+		mResult = set()
 		if not self.shouldRun():
 			self.issueReport('\'{0}\' already current.'.format(self.getHtmlName()))
 			gen = ContentGenerator(None)
-			result.add(os.path.abspath(self.filename))
+			pResult.add(os.path.abspath(self.filename))
 			execfile(self.filename, globals(), locals()) ## updates gen
-			#return set()
 		else:
 			try:
 				writer = open(self.getHtmlName(), 'w')
 				gen = ContentGenerator(writer)
-				result.add(os.path.abspath(self.filename))
+				pResult.add(os.path.abspath(self.filename))
+				mResult.add(os.path.abspath(self.filename))
 			except IOError, ioe:
 				self.issueReport('Failed to process {0}: {1}'.format(self.filename, ioe))
-				return set()
+				return (set(), set())
 			if gen == None:
-				return set()
+				return (set(), set())
 		
 			## set default elements in the generator
 			NAME = 'Eric L Duffy'
 			gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
 			execfile(self.filename, globals(), locals())
-			gen.addNodes([HomeLink(), ModifiedDateString(), BodyEnd(), DocEnd()])
+			gen.addNodes([HomeLink(), SourceLink(self.__stripPath(self.filename)), ModifiedDateString(), BodyEnd(), DocEnd()])
 			gen.generateHTML()
 			gen.close()
 			self.writeToStore()
@@ -278,14 +290,15 @@ class ScriptHandler:
 			scripts = self.getReferencedScripts(gen)
 			for script in scripts:
 				absScript = os.path.abspath(script)
-				if absScript in result:
+				if absScript in pResult:
 					continue
 				if not os.path.exists(absScript):
 					self.issueReport('Script \'{0}\' referenced in \'{1}\' does not exist'.format(script, self.filename))
 					continue
 				sh = ScriptHandler(script, self.opts)
-				processed = sh.run()
-				result |= processed
+				(processed, modified) = sh.run()
+				pResult |= processed
+				mResult |= modified
 		
 		if self.__checksRelativeRefs() or self.__checksAllRefs():
 			refs = self.getReferencedResources(gen)
@@ -299,7 +312,7 @@ class ScriptHandler:
 						## check the link
 						self.__checkAndReportExternal(ref)
 		
-		return result
+		return (pResult, mResult)
 
 
 ###	ContentGenerator contains a list of ContentNode objects and generates the output HTML
@@ -473,17 +486,19 @@ class AStart(TagStart):
 class AEnd(TagEnd):
 	def __init__(self):
 		super(AEnd, self).__init__('a')
-
 class AStartEnd(TagStartEnd):
 	def __init__(self, content, cls=None, **kwargs):
 		super(AStartEnd, self).__init__('a', content, cls, **kwargs)
 
 class CenterStart(TagStart):
-	def __init__(self, cls=None, **kwargs):
-		super(CenterStart, self).__init__('center', cls, **kwargs)
+	def __init__(self, **kwargs):
+		super(CenterStart, self).__init__('center', None, **kwargs)
 class CenterEnd(TagEnd):
 	def __init__(self):
 		super(CenterEnd, self).__init__('center')
+class CenterStartEnd(TagStartEnd):
+	def __init__(self, content, **kwargs):
+		super(CenterStartEnd, self).__init__('center', content, None, **kwargs)
 
 class PStart(TagStart):
 	def __init__(self, cls=None, **kwargs):
@@ -491,6 +506,10 @@ class PStart(TagStart):
 class PEnd(TagEnd):
 	def __init__(self):
 		super(PEnd, self).__init__('p')
+class PStartEnd(TagStartEnd):
+	def __init__(self, content, cls=None, **kwargs):
+		super(PStartEnd, self).__init__('p', content, cls, **kwargs)
+	
 
 class HREF(TagStartEnd):
 	def __init__(self, text, href):
@@ -518,10 +537,12 @@ class Break(TagStart):
 class BoldStart(TagStart):
 	def __init__(self):
 		super(BoldStart, self).__init__('b')
-
 class BoldEnd(TagEnd):
 	def __init__(self):
 		super(BoldEnd, self).__init__('b')
+class BoldStartEnd(TagStartEnd):
+	def __init__(self, content):
+		super(BoldStartEnd, self).__init__('b', content)
 
 class UList(TagStartEnd):
 	def __init__(self, cls=None, *nodes):
@@ -576,6 +597,9 @@ class NodeList(ContentNode):
 class Table(TagStartEnd):
 	def __init__(self, cls=None, *headers):
 		super(Table, self).__init__('table', NodeList(), cls)
+
+		if headers == None or len(headers) == 0:
+			return
 		headerRow = TableRow(cls)
 		for header in headers:
 			if not isinstance(header, ContentNode):
@@ -625,6 +649,10 @@ class Img(TagEmpty):
 		self.src = src
 	def getSource(self):
 		return self.src
+
+class DivStartEnd(TagStartEnd):
+	def __init__(self, content, cls=None):
+		super(DivStartEnd, self).__init__('div', content, cls)
 
 class Link(TagEmpty):
 	def __init__(self, rel, type, href, cls=None):
@@ -707,7 +735,11 @@ class PageSection(ContentNode):
 
 class HomeLink(NodeList):
 	def __init__(self):
-		super(HomeLink, self).__init__(Break(), HREF('Home','http://eduff.net'), Break(), Break())
+		super(HomeLink, self).__init__(Break(), HREF('Home','http://eduff.net'), Break())
+
+class SourceLink(NodeList):
+	def __init__(self, filename):
+		super(SourceLink, self).__init__(HREF('Source', filename), Break(), Break())
 
 class ModifiedDateString(DateString):
 	def __init__(self):

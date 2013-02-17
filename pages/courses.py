@@ -1,4 +1,5 @@
 #!/usr/bin/python
+# -*- coding: UTF-8 -*-
 from sys import stderr
 
 def readFromTable(table, srcFile):
@@ -34,8 +35,6 @@ readFromTable(ugcsTable, 'misc/ugcs_courses.src')
 
 ugmathTable = Table(None, 'Code', 'Title', 'Professor')
 readFromTable(ugmathTable, 'misc/ugmath_courses.src')
-
-
 
 gen.addNodes([
 SectionStart('bordered'),
