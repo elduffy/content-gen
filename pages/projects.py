@@ -7,26 +7,34 @@ class Project(ContentNode):
 	def __init__(self, name, year, desc, *skillList):
 		self.name = name
 		self.year = year
+		if not isinstance(desc, ContentNode):
+			desc = ContentString(desc)
 		self.desc = desc
-		self.skillList = skillList
+		self.skillList = NodeList(*sorted(skillList, key=lambda x:str(x)))
 	def generateHTML(self):
 		nodes = [
 		Header('{0} ({1}).'.format(self.name, self.year), 3),
 		PStartEnd(self.desc),
 		Header('Related Skills:',4),
-		UList('ast',*self.skillList) ]
+		UList('ast', *self.skillList) ]
 		result = ''
 		for node in nodes:
 			result += node.generateHTML()
 		return result
+	def canHoldChildren(self):
+		return True
+	def __iter__(self):
+		lst = []
+		if self.desc.canHoldChildren():
+			lst.extend(self.desc)
+		else:
+			lst.append(self.desc)
+		if self.skillList != None:
+			lst.extend(self.skillList)
+		return iter(lst)
 
-gen.addNodes([
-SectionStart('bordered'),
-
-PStartEnd('''I have been working on a number of projects over the years.
-I am gradually updating this page with my activity, so keep checking back.
-I'll also include screenshots and source code 
-once I take the time to resurrect my sunsetted projects.'''),
+## define the projects in a list
+projects = NodeList(
 
 Project('Research Database', 2012,
 '''I am currently the <i>de facto</i> database administrator for my research group. I have
@@ -85,5 +93,20 @@ HREF('Mandelbrot Set', 'http://en.wikipedia.org/wiki/Mandelbrot_set'),
 other features. I presented it to win 2nd place at the UTD programming competition.'''),
 'C#', 'Calculus', 'Numerical analysis', 'Real analysis', 'Set theory', 'Complex variables'),
 
+Project('Webpage Content Generator', 2013,
+NodeList('I have developed a Python framework for statically generating the content of this website. See ',
+ScriptRef('here', 'webgen.py'), ' for details.'),
+'Python', 'Web development'))
+
+## sort by year, descending
+projects = NodeList(*sorted(iter(projects), key=lambda x:x.year, reverse=True))
+
+gen.addNodes([
+SectionStart('bordered'),
+PStartEnd('''I have been working on a number of projects over the years.
+I am gradually updating this page with my activity, so keep checking back.
+I'll also include screenshots and source code 
+once I take the time to resurrect my sunsetted projects.'''),
+projects,
 SectionEnd()
 ])

@@ -289,13 +289,22 @@ class ScriptHandler:
 		if self.__isRecursive():
 			scripts = self.getReferencedScripts(gen)
 			for script in scripts:
+				olddir = os.path.abspath('.')
+				filedir = os.path.dirname(self.filename)
+				if len(filedir) == 0:
+					filedir = '.'
+				os.chdir(filedir)
 				absScript = os.path.abspath(script)
+				os.chdir(olddir)
+				#absScript = os.path.abspath(script)
 				if absScript in pResult:
 					continue
 				if not os.path.exists(absScript):
+					print(absScript)
 					self.issueReport('Script \'{0}\' referenced in \'{1}\' does not exist'.format(script, self.filename))
 					continue
-				sh = ScriptHandler(script, self.opts)
+				#sh = ScriptHandler(script, self.opts)
+				sh = ScriptHandler(absScript, self.opts)
 				(processed, modified) = sh.run()
 				pResult |= processed
 				mResult |= modified
