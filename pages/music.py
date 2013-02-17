@@ -7,6 +7,7 @@ if __name__ == '__main__':
 
 table = Table('bordered', 'Title', 'Composer', 'Type', 'File')
 list1 = NodeList(HREF('MP3','../music/recordings/buckets_of_rain.mp3'),
+	' ',
 	HREF('WAV','../music/recordings/buckets_of_rain.wav'))
 table.addRow(TableRow('bordered', 'Buckets of Rain', 'Bob Dylan', 'Instrumental/Exerpt', list1))
 
