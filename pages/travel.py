@@ -17,7 +17,8 @@ def generatePhotoTable():
 	('eiger.jpg', 'Eiger from Grindelwald, Switzerland'),	('zurich.jpg', 'Z&#xFCrich, Switzerland'),
 	('rapperswil.jpg', 'Rapperswil, Switzerland'),		('zug.jpg', 'Der Zugerberg, Switzerland'),
 	('phoenix_park.jpg', 'Phoenix Park, Dublin, Ireland'),	('bath.jpg', 'Bath, UK'),
-	('windermere.jpg', 'Lake Windermere, UK'),		('cambridge.jpg', 'Cambridge, UK')
+	('windermere.jpg', 'Lake Windermere, UK'),		('cambridge.jpg', 'Cambridge, UK'),
+	('laurentides.jpg', 'Laurentides, QC, Canada')
 	]
 	
 	curRow = TableRow()
@@ -31,6 +32,8 @@ def generatePhotoTable():
 		if colCount % COLS == 0:
 			result.addRow(curRow)
 			curRow = TableRow()
+	if colCount % COLS != 0:
+		result.addRow(curRow)
 	return result
 
 countries = ['United States', 'Mexico', 'France', 'Switzerland', 'United Kingdom', 'Ireland', 'Canada']
