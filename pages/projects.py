@@ -36,6 +36,13 @@ class Project(ContentNode):
 ## define the projects in a list
 projects = NodeList(
 
+Project('Credit Card Image Detector', 2012, NodeList(
+'''With the help of two partners, we constructed a tool for detecting credit cards embedded within
+images. The motivation for this project was the observation that some people intentionally upload
+images of their credit cards to ''', HREF('social networking sites', 'https://twitter.com/needadebitcard'),
+'. We presented and wrote a report on this project for a UIUC Machine Learning course.'),
+'Python', 'OpenCV', 'Machine Learning', 'Object Detection'),
+
 Project('Research Database', 2012,
 '''I am currently the <i>de facto</i> database administrator for my research group. I have
 designed and implemented a normalized MySQL schema to hold our research dataset as well
