@@ -481,7 +481,7 @@ class DocStart(TagStart):
 	def __init__(self):
 		super(DocStart, self).__init__('html')
 	def generateHTML(self):
-		return '<!DOCTYPE html>\n' + super(DocStart, self).generateHTML()
+		return '<!DOCTYPE html>\n<meta charset="utf-8">\n' + super(DocStart, self).generateHTML()
 
 class DocEnd(TagEnd):
 	def __init__(self):

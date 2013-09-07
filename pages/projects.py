@@ -100,10 +100,20 @@ HREF('Mandelbrot Set', 'http://en.wikipedia.org/wiki/Mandelbrot_set'),
 other features. I presented it to win 2nd place at the UTD programming competition.'''),
 'C#', 'Calculus', 'Numerical analysis', 'Real analysis', 'Set theory', 'Complex variables'),
 
+Project('The Multiview Audit Interface', 2013, NodeList(
+'''For my master's thesis, I developed a prototype for a system that employs a plug-and-play 
+functionality to seamlessly integrate existing anomaly detection methods into
+healthcare audit databases. This system presents the analytical results to both administrators and
+patients in a way that facilitates the determination of the legitimacy of accesses to 
+patient records.'''),
+'Java', 'Tomcat', 'Machine Learning', 'Anomaly Detection', 'Software Design & Implementation',
+'Technical Writing'),
+
 Project('Webpage Content Generator', 2013,
 NodeList('I have developed a Python framework for statically generating the content of this website. See ',
 ScriptRef('here', 'webgen.py'), ' for details.'),
 'Python', 'Web development'))
+
 
 ## sort by year, descending
 projects = NodeList(*sorted(iter(projects), key=lambda x:x.year, reverse=True))

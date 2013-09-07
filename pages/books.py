@@ -21,6 +21,8 @@ table.addRow(TableRow('bordered','Infinite Jest', 'David Foster Wallace',
 	HREF('978-0316066525', 'http://www.amazon.com/dp/0316066524')))
 table.addRow(TableRow('bordered','Psychopath Test, The', 'Jon Ronson',
 	HREF('978-1594485756', 'http://www.amazon.com/dp/1594485755')))
+table.addRow(TableRow('bordered','Thinking, Fast and Slow', 'Daniel Kahneman',
+	HREF('978-0374533557', 'http://www.amazon.com/dp/0374533555')))
 
 books.addNode(CenterStartEnd(table))
 gen.addNodes([

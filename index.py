@@ -10,44 +10,53 @@ IMG_ME_SRC = 'photos/me.jpg'
 ## Personal Info Section
 personal = PageSection('Personal', 'bordered')
 personal.addNodes([
-PStart(),
-'My name is Eric Duffy. I am a researcher and student at the ',
-HREF('University of Illinois at Urbana-Champaign', 'http://www.illinois.edu/'),
-'. I work in the ',
-HREF('Illinois Security Lab', 'http://seclab.illinois.edu/'),
-' under ',
-HREF('Dr. Carl Gunter', 'http://cgunter.web.cs.illinois.edu/'),	
-'. My research interests are mostly related to computer and network security, but also\
- include all things regarding computation and mathematics. I enjoy ',
+PStartEnd(NodeList(
+'My name is Eric Duffy. I am an American software engineer living in '
+' Canada. I enjoy ',
 ScriptRef('playing music', 'pages/music.py'),
 ', ',
 ScriptRef('traveling', 'pages/travel.py'),
 ', working on various ',
 ScriptRef('projects', 'pages/projects.py'),
-' and spending time outdoors.',
-PEnd(),
-PStart(),
-'I am currently seeking employment for summer 2013. If you need a security specialist around that time, please ',
-AStartEnd('contact', href='#contact'), ## avoid HREF so it the checker won't throw an error
-' me!',
-PEnd()
+', learning the French language and spending time outdoors.')),
+
 ])
 
 
 ## Occupation History Section
 occup = PageSection('Occupational History', 'bordered')
+# GWAVA
+occup.addNodes([
+PStartEnd(NodeList(
+BoldStartEnd(HREF('GWAVA, Inc.', 'http://gwava.com')), 
+' - Software Engineer (2013 - Present). ',
+HREF('Montréal, Québec, Canada.', 'https://maps.google.com/maps?ll=45.520301,-73.619492&z=11'),
+PStartEnd(NodeList(
+'I form part of a small but talented team developing and maintaining GWAVA\'s Retain archiving product.',
+' We write awesome software using Apache Tomcat, Spring, Hibernate and, of course, Java.'
+), cls='n')
+))
+])
+
 # UIUC
 occup.addNodes([
-PStart(),
+PStartEnd(NodeList(
 BoldStartEnd(HREF('The University of Illinois at Urbana-Champaign', 'http://www.illinois.edu')),
-' - Research Assistant & Teaching Assistant (2011-Present). ',
-HREF('Urbana, Illinois.', 'http://maps.google.com/maps?ll=40.102039,-88.229927&z=14'),
+' - Research Assistant & Teaching Assistant (2011-2013). ',
+HREF('Urbana, Illinois, USA.', 'https://maps.google.com/maps?ll=40.102039,-88.229927&z=14'),
 PEnd(),
 PStart(cls='n'),
-'I study under Dr. Carl Gunter in the Illinois Security Lab.  My current research relates to healthcare IT security, vulnerability research and general system security.  I am an investigator on the ',
+'I studied under ',
+HREF('Dr. Carl Gunter','http://cgunter.web.cs.illinois.edu/'),
+' in the ',
+HREF('Illinois Security Lab', 'http://seclab.illinois.edu/'),
+'.  My research was related to healthcare IT security, vulnerability research and general system security.  I was an investigator on the ',
 HREF('SHARPS', 'http://sharps.org'),
-' project. I also helped teach Numerical Analysis (CS 450) in Fall 2011.',
-PEnd()
+' project. See our publication in ',
+HREF('HealthTech 2013', 'http://0b4af6cdc2f0c5998459-c0245c5c937c5dedcca3f1764ecc9b2f.r43.cf2.rackcdn.com/12455-healthtech13-duffy.pdf'),
+' and my ',
+HREF("master's thesis",'https://www.ideals.illinois.edu/handle/2142/45545'),
+'.'))
 ])
 
 # Raytheon-SI
@@ -55,7 +64,7 @@ occup.addNodes([
 PStart(),
 BoldStartEnd(HREF('Raytheon-SI Government Solutions', 'http://www.raytheon.com')),
 ' - Graduate Vulnerability Research Intern (Summer 2012). ',
-HREF('Baltimore-Washington, Maryland.', 'http://maps.google.com/maps?ll=39.114287,-76.777902&z=10'),
+HREF('Baltimore-Washington, Maryland, USA.', 'https://maps.google.com/maps?ll=39.114287,-76.777902&z=10'),
 PEnd(),
 PStartEnd('Vulnerability research using modern tools and methods including fuzzing, static analysis, dynamic analysis, virtualization, debugging and much, much more.', cls='n')
 ])
@@ -65,7 +74,7 @@ occup.addNodes([
 PStart(),
 BoldStartEnd(HREF('Cerner Corporation', 'http://www.cerner.com')),
 ' - Software Engineer (2010-2011). ',
-HREF('Kansas City, Missouri.', 'http://maps.google.com/maps?ll=39.100226,-94.581694&z=14'),
+HREF('Kansas City, Missouri, USA.', 'https://maps.google.com/maps?ll=39.100226,-94.581694&z=14'),
 PEnd(),
 PStartEnd('Providing support for Cerner Millennium including memory dump analysis, network analysis, developing debugging tools, and working closely with clients.', cls='n')
 ])
@@ -75,7 +84,7 @@ occup.addNodes([
 PStart(),
 BoldStartEnd(HREF('The University of Texas at Dallas', 'http://www.utdallas.edu')),
 ' - Help Desk, CS Tutor, Computer Lab, etc (2006-2010). ',
-HREF('Richardson, Texas.', 'http://maps.google.com/maps?ll=32.986492,-96.749137&z=15'),
+HREF('Richardson, Texas, USA.', 'https://maps.google.com/maps?ll=32.986492,-96.749137&z=15'),
 PEnd(),
 PStartEnd('A plethora of responsibilities such as Windows/*nix administration, client support, fundraising, and anything else that pays the bills.',cls='n')
 ])
