@@ -104,7 +104,7 @@ PEnd()
 # UTD CS
 educa.addNodes([
 PStart(),
-BoldStartEnd(HREF('The University of Texas at Dallas', 'http://www.illinois.edu')),
+BoldStartEnd(HREF('The University of Texas at Dallas', 'http://www.utdallas.edu')),
 ' - B.S., Computer Science (2010). (',
 ScriptRef('Courses', 'pages/courses.py', 'ug_cs'),
 ') ',
@@ -124,7 +124,7 @@ accol.addNodes([
 educa.addNodes([
 PStart(),
 BoldStart(),
-HREF('The University of Texas at Dallas', 'http://www.illinois.edu'),
+HREF('The University of Texas at Dallas', 'http://www.utdallas.edu'),
 BoldEnd(),
 ' - B.S., Mathematics (2010). (',
 ScriptRef('Courses', 'pages/courses.py', 'ug_math'),
