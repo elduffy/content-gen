@@ -18,7 +18,7 @@ def generatePhotoTable():
 	('rapperswil.jpg', 'Rapperswil, Switzerland'),		('zug.jpg', 'Der Zugerberg, Switzerland'),
 	('phoenix_park.jpg', 'Phoenix Park, Dublin, Ireland'),	('bath.jpg', 'Bath, UK'),
 	('windermere.jpg', 'Lake Windermere, UK'),		('cambridge.jpg', 'Cambridge, UK'),
-	('laurentides.jpg', 'Laurentides, QC, Canada')
+	('laurentides.jpg', 'Laurentides, QC, Canada'),		('moustiers.jpg', 'Moustiers-Sainte-Marie, France')
 	]
 	
 	curRow = TableRow()
