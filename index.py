@@ -18,22 +18,32 @@ ScriptRef('playing music', 'pages/music.py'),
 ScriptRef('traveling', 'pages/travel.py'),
 ', working on various ',
 ScriptRef('projects', 'pages/projects.py'),
-', learning the French language and spending time outdoors.')),
-
+', learning the French language and spending time outdoors.'))
 ])
 
 
 ## Occupation History Section
 occup = PageSection('Occupational History', 'bordered')
+montrealLocation = 'https://maps.google.com/maps?ll=45.520301,-73.619492&z=11'
+# Google
+occup.addNodes([
+PStartEnd(NodeList(
+BoldStartEnd(HREF('Google', 'https://google.com')),
+' - Software Developer, Security (2015 - Present). ',
+HREF('Montréal, Québec, Canada.', montrealLocation),
+PStartEnd(NodeList('I work on Google\'s security infrastructure in order to make the web a safer place.'), cls='n')
+))
+])
+
 # GWAVA
 occup.addNodes([
 PStartEnd(NodeList(
 BoldStartEnd(HREF('GWAVA, Inc.', 'http://gwava.com')), 
-' - Software Engineer (2013 - Present). ',
-HREF('Montréal, Québec, Canada.', 'https://maps.google.com/maps?ll=45.520301,-73.619492&z=11'),
+' - Software Engineer (2013 - 2015). ',
+HREF('Montréal, Québec, Canada.', montrealLocation),
 PStartEnd(NodeList(
-'I form part of a small but talented team developing and maintaining GWAVA\'s Retain archiving product.',
-' We write awesome software using Apache Tomcat, Spring, Hibernate and, of course, Java.'
+'I lead a small but talented team developing and maintaining GWAVA\'s Retain archiving product.',
+' We developed software in Java and Scala using enterprise JVM technologies such as Apache Tomcat, Spring, and Hibernate.',
 ), cls='n')
 ))
 ])
