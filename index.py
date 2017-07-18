@@ -156,8 +156,8 @@ contact.addNodes([ PStart(), contactList, PEnd() ])
 
 ## Miscellaneous Section
 misc = PageSection('Miscellaneous', 'bordered')
-miscList = UList('ast', ScriptRef('Books', 'pages/books.py'),
-	ScriptRef('How this site is generated', 'pages/webgen.py'))
+miscList = UList('ast',
+        ScriptRef('How this site is generated', 'pages/webgen.py'))
 misc.addNode(PStartEnd(miscList))
 
 ## insert image above the header(s)
