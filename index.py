@@ -11,14 +11,14 @@ IMG_ME_SRC = 'photos/me.jpg'
 personal = PageSection('Personal', 'bordered')
 personal.addNodes([
 PStartEnd(NodeList(
-'My name is Eric Duffy. I am an American software engineer living in '
-' Canada. I enjoy ',
+'My name is Eric Duffy. I am a software engineer living in '
+' Austin, TX. I enjoy ',
 ScriptRef('playing music', 'pages/music.py'),
 ', ',
 ScriptRef('traveling', 'pages/travel.py'),
 ', working on various ',
 ScriptRef('projects', 'pages/projects.py'),
-', learning the French language and spending time outdoors.'))
+', and spending time outdoors.'))
 ])
 
 
@@ -29,7 +29,7 @@ montrealLocation = 'https://maps.google.com/maps?ll=45.520301,-73.619492&z=11'
 occup.addNodes([
 PStartEnd(NodeList(
 BoldStartEnd(HREF('Google', 'https://google.com')),
-' - Software Developer, Security (2015 - Present). ',
+' - Software Developer, Security (2015 - 2017). ',
 HREF('Montréal, Québec, Canada.', montrealLocation),
 PStartEnd(NodeList('I work on Google\'s security infrastructure in order to make the web a safer place.'), cls='n')
 ))
