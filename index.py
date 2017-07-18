@@ -31,7 +31,8 @@ PStartEnd(NodeList(
 BoldStartEnd(HREF('Google', 'https://google.com')),
 ' - Software Developer, Security (2015 - 2017). ',
 HREF('Montréal, Québec, Canada.', montrealLocation),
-PStartEnd(NodeList('I work on Google\'s security infrastructure in order to make the web a safer place.'), cls='n')
+PStartEnd(NodeList('I worked on Google\'s security infrastructure in order to make the web a safer place.',
+' I wrote software for an automated system that scans the world\'s web pages for malicious content.'), cls='n')
 ))
 ])
 
