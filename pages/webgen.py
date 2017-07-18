@@ -67,7 +67,7 @@ usage.addNodes([
 'The WebGen.py help menu can be invoked as follows:', Break(), Break(),
 
 textToHTML('''./WebGen.py -h
-Usage: WebGen.py [options] [script0 [script1 [...]]
+Usage: WebGen.py [options] [script0 [script1 [...]]]
 
 Options:
   -h, --help         show this help message and exit
