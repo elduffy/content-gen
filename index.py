@@ -155,12 +155,6 @@ HREF('LinkedIn','http://www.linkedin.com/pub/eric-duffy/40/56a/5a3')
 
 contact.addNodes([ PStart(), contactList, PEnd() ])
 
-## Miscellaneous Section
-misc = PageSection('Miscellaneous', 'bordered')
-miscList = UList('ast',
-        ScriptRef('How this site is generated', 'pages/webgen.py'))
-misc.addNode(PStartEnd(miscList))
-
 ## insert image above the header(s)
 idx = gen.findType(BodyStart)
 gen.insertNode(idx + 1, Img(IMG_ME_SRC, 'floatright'))
@@ -172,4 +166,3 @@ gen.addNode(educa)
 gen.addNode(Break())
 gen.addNode(contact)
 gen.addNode(Break())
-gen.addNode(misc)

@@ -298,9 +298,8 @@ class ScriptHandler:
 			NAME = 'Eric L Duffy'
 			gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
 			execfile(self.filename, globals(), locals())
-			gen.addNodes([HomeLink(), SourceLink(self.__stripPath(self.filename)),
-				WhatsThisLink(ScriptRef('',self.getRelativePath('pages/webgen.py'))),
-				Break(), Break(), ModifiedDateString(), BodyEnd(), DocEnd()])
+			gen.addNodes([HomeLink(), Break(), Break(), ModifiedDateString(),
+                            BodyEnd(), DocEnd()])
 			gen.generateHTML()
 			gen.close()
 			self.writeToStore()
@@ -771,15 +770,6 @@ class PageSection(ContentNode):
 class HomeLink(NodeList):
 	def __init__(self):
 		super(HomeLink, self).__init__(Break(), HREF('Home','http://eduff.net'), Break())
-
-class SourceLink(NodeList):
-	def __init__(self, filename):
-		super(SourceLink, self).__init__(HREF('Source', filename))
-
-class WhatsThisLink(SupStartEnd):
-	def __init__(self, link):
-		super(WhatsThisLink, self).__init__(link)
-		link.content = NodeList(TagStart('small'),"?",TagEnd('small'))
 
 class ModifiedDateString(DateString):
 	def __init__(self):

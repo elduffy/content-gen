@@ -111,7 +111,7 @@ patient records.'''),
 
 Project('Webpage Content Generator', 2013,
 NodeList('I have developed a Python framework for statically generating the content of this website. See ',
-ScriptRef('here', 'webgen.py'), ' for details.'),
+HREF('the github project', 'https://github.com/elduffy/content-gen'), ' for details.'),
 'Python', 'Web development'))
 
 
