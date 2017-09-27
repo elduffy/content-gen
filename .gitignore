@@ -3,6 +3,7 @@
 *.htm
 *.css
 *.js
+*.swp
 
 photos
 photos/*
