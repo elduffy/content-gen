@@ -296,7 +296,14 @@ class ScriptHandler:
 		
 			## set default elements in the generator
 			NAME = 'Eric L Duffy'
-			gen.addNodes([DocStart(), PageTitle(), LinkCSS(self.__cssPath()), BodyStart(), Header(NAME, 1), Header(self.getHtmlPageHeader(),2) ])
+                        title = NAME + " &mdash; " + self.getHtmlPageHeader()
+			gen.addNodes([
+                            DocStart(),
+                            PageTitle(title=title),
+                            LinkCSS(self.__cssPath()),
+                            BodyStart(),
+                            Header(NAME, 1)
+                        ])
 			execfile(self.filename, globals(), locals())
 			gen.addNodes([HomeLink(), Break(), Break(), ModifiedDateString(),
                             BodyEnd(), DocEnd()])
