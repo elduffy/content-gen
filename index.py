@@ -139,7 +139,7 @@ contact = PageSection('Contact', 'bordered')
 
 contactList = UList('ast')
 contactList.addNodes([
-NodeList('Email: ', Img('imgs/email_16.png')),
+'Email: eric at this domain',
 HREF('LinkedIn','http://www.linkedin.com/pub/eric-duffy/40/56a/5a3')
 ])
 
