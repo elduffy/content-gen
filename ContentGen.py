@@ -221,7 +221,7 @@ class ScriptHandler:
 		if extIdx > 0:
 			fname = fname[:extIdx]
 		firstChar = fname[0].upper()
-		fname = '- ' + str(firstChar) + str(fname[1:]) + '.'
+		fname = str(firstChar) + str(fname[1:])
 		return fname
 
 	def writeToStore(self):
