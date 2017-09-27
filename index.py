@@ -90,16 +90,6 @@ PEnd(),
 PStartEnd('Providing support for Cerner Millennium including memory dump analysis, network analysis, developing debugging tools, and working closely with clients.', cls='n')
 ])
 
-# UTD
-occup.addNodes([
-PStart(),
-BoldStartEnd(HREF('The University of Texas at Dallas', 'http://www.utdallas.edu')),
-' - Help Desk, CS Tutor, Computer Lab, etc (2006-2010). ',
-HREF('Richardson, Texas, USA.', 'https://maps.google.com/maps?ll=32.986492,-96.749137&z=15'),
-PEnd(),
-PStartEnd('A plethora of responsibilities such as Windows/*nix administration, client support, fundraising, and anything else that pays the bills.',cls='n')
-])
-
 ## Educational History Section
 # UIUC
 educa = PageSection('Educational History', 'bordered')
